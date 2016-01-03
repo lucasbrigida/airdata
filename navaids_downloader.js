@@ -146,12 +146,86 @@ var CSV = function() {
   };
 };
 
-//http://ourairports.com/data/navaids.csv
-(function() {
+
+var NAVAids = function(options) {
+  if (!options) throw new Error('options is not defined');
+
+  var geolib = require('geolib');
+  var colors = require('colors');
   var csv = new CSV();
+
+  var filter = function(csvObj, query) {
+    console.log(' 🔍  ' + 'Filtering navaids');
+    return csvObj.filter(function(navaid) {
+      var point = {
+        latitude: navaid.latitude_deg,
+        longitude: navaid.longitude_deg
+      };
+      if (geolib.isPointInside(point, query.area)) return navaid;
+    });
+  };
+
+  var get = function(query, cb) {
+    if (!cb) throw new Error('cb is not defined');
+    console.log(' 🚩  ' + 'Getting navaids');
+    csv.getFromFile(options.path, function(csvObj) {
+      if ((!query) || (query === null)) return cb(csvObj);
+      return cb(filter(csvObj, query));
+    });
+  };
+
+  var update = function(path, cb) {
+    if (!(path || options.path)) throw new Error('path is not defined');
+    csv.save(options.url, options.path, function() {
+      if (cb) return cb();
+    });
+  };
+
+  return {
+    get: get,
+    update: update
+  };
+};
+
+(function() {
+  var ns = new NAVAids({
+    url: 'http://ourairports.com/data/navaids.csv',
+    path: 'public/navaids.csv'
+  });
+
+  var curNavaids = function(navaids) {
+    console.log(' 📄  ' + navaids.length + ' navaids found');
+    for (var i in navaids) {
+      console.log({
+        filename: navaids[i].filename,
+        latitude: navaids[i].latitude_deg,
+        longitude: navaids[i].longitude_deg,
+        type: navaids[i].type,
+        associated_airport: navaids[i].associated_airport
+      });
+    }
+  };
+
+  ns.get({
+    area: [{
+      latitude: -21.46418923528391, //nw
+      longitude: -48.500632324218714
+    }, {
+      latitude: -21.46418923528391, //ne
+      longitude: -41.079367675781214
+    }, {
+      latitude: -23.428852054291365, //se
+      longitude: -41.079367675781214
+    }, {
+      latitude: -23.428852054291365, //sw
+      longitude: -48.500632324218714
+    }]
+  }, curNavaids);
+
+  //var csv = new CSV();
   /*csv.get('http://ourairports.com/data/navaids.csv', 'string', function(err, csvStr) {
     console.log(csvStr.length);
   })*/
   //csv.save('http://ourairports.com/data/navaids.csv', 'public/testt.csv', function() {});
-  csv.getFromFile('public/testt.csv', function(csvbObj) {});
+  //csv.getFromFile('public/testt.csv', function(csvbObj) {});
 })();
