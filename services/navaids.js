@@ -22,7 +22,7 @@ var NAVAids = function(options) {
     if (!cb) throw new Error('cb is not defined');
     console.log(' 🚩  ' + 'Getting navaids');
     csv.getFromFile(options.path, function(csvObj) {
-      if ((!query) || (query === null)) return cb(csvObj);
+      if ((!query.area) || (query.area === null)) return cb(csvObj);
       return cb(filter(csvObj, query));
     });
   };

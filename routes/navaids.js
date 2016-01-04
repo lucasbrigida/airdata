@@ -1,19 +1,10 @@
 var express = require('express');
 var router = express.Router();
-
 var NAVAids = require('../services/navaids');
-var ns = new NAVAids({
-  url: 'http://ourairports.com/data/navaids.csv',
-  path: 'public/navaids.csv'
-});
-ns.update('public/navaids.csv', function() {
-  console.log(' ✈  ' + ' Navaids updated');
-});
 
 // Update NAVAIDS
 var CronJob = require('cron').CronJob;
 var job = new CronJob('* 7 * * *', function() {
-  var NAVAids = require('../services/navaids');
   var ns = new NAVAids({
     url: 'http://ourairports.com/data/navaids.csv',
     path: 'public/navaids.csv'
@@ -26,32 +17,26 @@ var job = new CronJob('* 7 * * *', function() {
 /* GET NAVAIDS */
 router.get('/', function(req, res, next) {
   (function() {
+    //Allow CORS
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
     var ns = new NAVAids({
-      url: 'http://ourairports.com/data/navaids.csv',
-      path: 'public/navaids.csv'
-    });
+        url: 'http://ourairports.com/data/navaids.csv',
+        path: 'public/navaids.csv'
+      }),
+      processingTime = new Date();
 
     var curNavaids = function(navaids) {
       console.log(' 📄  ' + navaids.length + ' navaids found');
-      res.json(navaids);
+      res.json({
+        navaids: navaids
+      });
+      console.log(' ⌛  ' + 'The search for navaids spent ' + (new Date() - processingTime) + ' ms');
     };
 
-    var area = [{
-      latitude: -21.46418923528391, //nw
-      longitude: -48.500632324218714
-    }, {
-      latitude: -21.46418923528391, //ne
-      longitude: -41.079367675781214
-    }, {
-      latitude: -23.428852054291365, //se
-      longitude: -41.079367675781214
-    }, {
-      latitude: -23.428852054291365, //sw
-      longitude: -48.500632324218714
-    }];
-
     ns.get({
-      area: req.query.area || area
+      area: req.query.area
     }, curNavaids);
 
     //var csv = new CSV();
